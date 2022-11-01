@@ -4,12 +4,25 @@ use warp::Filter;
 async fn main() {
     let all = warp::filters::method::method()
         .and(warp::filters::path::full())
+        .and(
+            warp::filters::query::raw()
+                .map(Some)
+                .or_else(|_| async { Ok::<(Option<String>,), std::convert::Infallible>((None,)) }),
+        )
         .and(warp::filters::header::headers_cloned())
         .and(warp::filters::body::bytes())
         .map(
-            |method, path: warp::path::FullPath, headers, bytes: warp::hyper::body::Bytes| {
+            |method,
+             path: warp::path::FullPath,
+             query,
+             headers,
+             bytes: warp::hyper::body::Bytes| {
                 println!("Method: {method}");
-                println!("Path: {}", path.as_str());
+                if let Some(query) = query {
+                    println!("Path: {}?{}", path.as_str(), query);
+                } else {
+                    println!("Path: {}", path.as_str());
+                }
                 println!("Headers: {headers:?}");
                 if bytes.is_empty() {
                     println!("No Body");
